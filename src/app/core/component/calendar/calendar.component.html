@@ -20,7 +20,6 @@
 
     <div class="view-toggle">
       <button class="toggle-btn" (click)="toggleView()">
-<!--        <i class="fas" [ngClass]="(isWeekView$ | async) ? 'fa-calendar-alt' : 'fa-calendar-week'"></i>-->
         <span class="btn-text">{{ (isWeekView$ | async) ? 'Vue Mois' : 'Vue Semaine' }}</span>
       </button>
     </div>

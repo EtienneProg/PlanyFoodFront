@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, combineLatest } from 'rxjs';
 import { map, takeUntil, tap } from 'rxjs/operators';
 
@@ -19,7 +19,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
   private touchStartX: number = 0;
   private touchEndX: number = 0;
   private swipeThreshold: number = 50; // Minimum distance for a swipe
-  private swipeTimeout: number = 300; // Maximum time for a swipe in milliseconds
   private touchStartTime: number = 0;
   private touchEndTime: number = 0;
   private isSwiping: boolean = false;
@@ -49,24 +48,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
   calendarDays$: Observable<Date[]> = this.calendarDaysSubject.asObservable();
   nextCalendarDays$: Observable<Date[]> = this.nextCalendarDaysSubject.asObservable();
   prevCalendarDays$: Observable<Date[]> = this.prevCalendarDaysSubject.asObservable();
-  selectedDate$: Observable<Date | null> = this.selectedDateSubject.asObservable();
   swipeState$: Observable<{ direction: string, progress: number }> = this.swipeStateSubject.asObservable();
   carouselPosition$: Observable<number> = this.carouselPositionSubject.asObservable();
 
-  // Helper methods for template
-  calculatePrevOpacity(state: { direction: string, progress: number } | null): number {
-    if (state?.direction === 'right') {
-      return Math.min(state.progress / 50, 1);
-    }
-    return 0;
-  }
-
-  calculateNextOpacity(state: { direction: string, progress: number } | null): number {
-    if (state?.direction === 'left') {
-      return Math.min(state.progress / 50, 1);
-    }
-    return 0;
-  }
 
   // Static data
   weekDays: string[] = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -185,11 +169,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Easing function for smoother animation
-  private easeOutQuad(t: number): number {
-    return t * (2 - t / 100);
-  }
-
   // Handle touch end event
   private handleTouchEnd(event: TouchEvent): void {
     if (!this.isSwiping || this.touchEndX === 0) return;
@@ -242,29 +221,13 @@ export class CalendarComponent implements OnInit, OnDestroy {
           this.navigateToNext();
         }
 
-        // For left swipes, don't animate back to center - just jump there instantly
-        if (isSwipingLeft) {
-          // Keep the swipe direction to prevent transition animation
-          this.swipeStateSubject.next({ direction: 'left', progress: 0 });
-          this.carouselPositionSubject.next(-33.333);
+        // Reset carousel position
+        this.resetCarouselPosition(isSwipingLeft ? 'left' : 'right');
 
-          // Reset the swipe state after a short delay to allow the DOM to update
-          setTimeout(() => {
-            this.swipeStateSubject.next({ direction: '', progress: 0 });
-            this.isTouch = false;
-          }, 1);
-        } else {
-          // For right swipes, use the same approach as left swipes
-          // Keep the swipe direction to prevent transition animation
-          this.swipeStateSubject.next({ direction: 'right', progress: 0 });
-          this.carouselPositionSubject.next(-33.333);
-
-          // Reset the swipe state after a short delay to allow the DOM to update
-          setTimeout(() => {
-            this.swipeStateSubject.next({ direction: '', progress: 0 });
-            this.isTouch = false;
-          }, 1);
-        }
+        // Reset touch flag
+        setTimeout(() => {
+          this.isTouch = false;
+        }, 1);
       });
     } else {
       // Animate back to center position
@@ -318,11 +281,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
   // Quint easing function for more natural finger-like movement
   private easeOutQuint(t: number): number {
     return 1 - Math.pow(1 - t, 5);
-  }
-
-  // Cubic easing function (kept for reference)
-  private easeOutCubic(t: number): number {
-    return 1 - Math.pow(1 - t, 3);
   }
 
   // Generate calendar days for the current month or week
@@ -403,13 +361,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
     // Add days from previous month to fill the first week
     const daysFromPrevMonth = firstDayOfWeek;
-    const prevMonth = new Date(year, month, 0); // Last day of previous month
-    const prevMonthLastDate = prevMonth.getDate();
-
-    // Add days from the previous month in reverse order
-    for (let i = daysFromPrevMonth; i > 0; i--) {
-      const day = prevMonthLastDate - i + 1;
-      days.push(new Date(prevMonth.getFullYear(), prevMonth.getMonth(), day));
+    const prevMonth = new Date(year, month, 0);
+    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
+      days.push(new Date(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonth.getDate() - i));
     }
 
     // Add all days of the current month
@@ -419,7 +373,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
     // Add days from next month to complete the last week
     const remainingDays = 7 - (days.length % 7);
-    if (remainingDays < 7) {
+    if (remainingDays <= 7 && remainingDays > 0) {
       for (let i = 1; i <= remainingDays; i++) {
         days.push(new Date(year, month + 1, i));
       }
@@ -447,14 +401,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
   // Toggle between month and week view
   toggleView() {
     const currentValue = this.isWeekViewSubject.getValue();
-    const selectedDate = this.selectedDateSubject.getValue();
-
-    // If toggling to week view and a day is selected, update current date to show that week
-    if (!currentValue && selectedDate) {
-      this.currentDateSubject.next(new Date(selectedDate));
-    }
-
-    // Update the view
     this.isWeekViewSubject.next(!currentValue);
   }
 
@@ -464,15 +410,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.animateCarouselToPosition(0, () => {
       // After animation completes, update the current date
       this.navigateToPrevious();
-
-      // Keep the swipe direction as 'right' to prevent transition animation
-      this.swipeStateSubject.next({ direction: 'right', progress: 0 });
-      this.carouselPositionSubject.next(-33.333);
-
-      // Reset the swipe state after a short delay to allow the DOM to update
-      setTimeout(() => {
-        this.swipeStateSubject.next({ direction: '', progress: 0 });
-      }, 1);
+      this.resetCarouselPosition('right');
     });
   }
 
@@ -482,16 +420,20 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.animateCarouselToPosition(-66.666, () => {
       // After animation completes, update the current date
       this.navigateToNext();
-
-      // Keep the swipe direction as 'left' to prevent transition animation
-      this.swipeStateSubject.next({ direction: 'left', progress: 0 });
-      this.carouselPositionSubject.next(-33.333);
-
-      // Reset the swipe state after a short delay to allow the DOM to update
-      setTimeout(() => {
-        this.swipeStateSubject.next({ direction: '', progress: 0 });
-      }, 1);
+      this.resetCarouselPosition('left');
     });
+  }
+
+  // Reset carousel position after navigation
+  private resetCarouselPosition(direction: 'left' | 'right') {
+    // Keep the swipe direction to prevent transition animation
+    this.swipeStateSubject.next({ direction, progress: 0 });
+    this.carouselPositionSubject.next(-33.333);
+
+    // Reset the swipe state after a short delay to allow the DOM to update
+    setTimeout(() => {
+      this.swipeStateSubject.next({ direction: '', progress: 0 });
+    }, 1);
   }
 
   // Update current date to previous month/week and regenerate calendar
@@ -529,17 +471,21 @@ export class CalendarComponent implements OnInit, OnDestroy {
     // Update current date to today
     this.currentDateSubject.next(new Date());
 
-    // Reset carousel position without animation
-    this.swipeStateSubject.next({ direction: '', progress: 0 });
+    // Reset carousel position without animation (no direction needed)
     this.carouselPositionSubject.next(-33.333);
+    this.swipeStateSubject.next({ direction: '', progress: 0 });
+  }
+
+  // Helper method to compare dates (ignoring time)
+  private isSameDate(date1: Date, date2: Date): boolean {
+    return date1.getDate() === date2.getDate() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
   }
 
   // Check if a date is today
   isToday(date: Date): boolean {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+    return this.isSameDate(date, new Date());
   }
 
   // Check if a date is in the current month
@@ -547,7 +493,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     const currentDate = this.currentDateSubject.getValue();
     return date.getMonth() === currentDate.getMonth();
   }
-
 
   // Format date to display month and year
   formatMonthYear(date: Date): string {
@@ -586,8 +531,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     const selectedDate = this.selectedDateSubject.getValue();
     if (!selectedDate) return false;
 
-    return day.getDate() === selectedDate.getDate() &&
-           day.getMonth() === selectedDate.getMonth() &&
-           day.getFullYear() === selectedDate.getFullYear();
+    return this.isSameDate(day, selectedDate);
   }
+
 }
