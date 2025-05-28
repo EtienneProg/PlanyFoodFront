@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { AppComponent } from './app.component';
 import {RouteReuseStrategy} from "@angular/router";
 import {AppRoutingModule} from "./app-routing.module";
@@ -18,6 +18,7 @@ import {CommonModule} from "@angular/common";
     AppRoutingModule,
     HttpClientModule,
     CommonModule,
+    FontAwesomeModule
   ],
   providers: [
     {

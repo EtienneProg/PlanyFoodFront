@@ -17,89 +17,89 @@
     <div class="calendar-title">
       {{ monthYear$ | async }}
     </div>
+  </div>
+  <div class="container">
+    <!-- Calendar Grid Container -->
+    <div class="calendar-grid-container">
+      <!-- Calendar Carousel -->
+      <div class="calendar-carousel"
+           [style.transform]="'translateX(' + (carouselPosition$ | async) + '%)'"
+           [style.transition]="(swipeState$ | async)?.direction ? 'none' : 'transform 0.1s ease-out'">
 
+        <!-- Previous Month/Week Grid -->
+        <div class="calendar-grid"
+             [ngClass]="{'week-view': isWeekView$ | async}">
+          <!-- Weekday Headers -->
+          <div class="weekday-header" *ngFor="let day of weekDays">
+            {{ day }}
+          </div>
+
+          <!-- Calendar Days -->
+          <div
+            *ngFor="let day of prevCalendarDays$ | async"
+            class="calendar-day"
+            [ngClass]="{
+              'today': isToday(day),
+              'other-month': !isCurrentMonth(day),
+              'selected': isSelected(day)
+            }"
+            (click)="selectDay(day, $event)"
+          >
+            <div class="day-number">{{ day.getDate() }}</div>
+          </div>
+        </div>
+
+        <!-- Current Month/Week Grid -->
+        <div class="calendar-grid current-grid"
+             [ngClass]="{'week-view': isWeekView$ | async}">
+          <!-- Weekday Headers -->
+          <div class="weekday-header" *ngFor="let day of weekDays">
+            {{ day }}
+          </div>
+
+          <!-- Calendar Days -->
+          <div
+            *ngFor="let day of calendarDays$ | async"
+            class="calendar-day"
+            [ngClass]="{
+              'today': isToday(day),
+              'other-month': !isCurrentMonth(day),
+              'selected': isSelected(day)
+            }"
+            (click)="selectDay(day, $event)"
+          >
+            <div class="day-number">{{ day.getDate() }}</div>
+          </div>
+        </div>
+
+        <!-- Next Month/Week Grid -->
+        <div class="calendar-grid"
+             [ngClass]="{'week-view': isWeekView$ | async}">
+          <!-- Weekday Headers -->
+          <div class="weekday-header" *ngFor="let day of weekDays">
+            {{ day }}
+          </div>
+
+          <!-- Calendar Days -->
+          <div
+            *ngFor="let day of nextCalendarDays$ | async"
+            class="calendar-day"
+            [ngClass]="{
+              'today': isToday(day),
+              'other-month': !isCurrentMonth(day),
+              'selected': isSelected(day)
+            }"
+            (click)="selectDay(day, $event)"
+          >
+            <div class="day-number">{{ day.getDate() }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="view-toggle">
       <button class="toggle-btn" (click)="toggleView()">
-        <span class="btn-text">{{ (isWeekView$ | async) ? 'Vue Mois' : 'Vue Semaine' }}</span>
+        <fa-icon [icon]="(isWeekView$ | async) ? faChevronDown : faChevronUp"></fa-icon>
       </button>
-    </div>
-  </div>
-
-  <!-- Calendar Grid Container -->
-  <div class="calendar-grid-container">
-    <!-- Calendar Carousel -->
-    <div class="calendar-carousel"
-         [style.transform]="'translateX(' + (carouselPosition$ | async) + '%)'"
-         [style.transition]="(swipeState$ | async)?.direction ? 'none' : 'transform 0.1s ease-out'">
-
-      <!-- Previous Month/Week Grid -->
-      <div class="calendar-grid"
-           [ngClass]="{'week-view': isWeekView$ | async}">
-        <!-- Weekday Headers -->
-        <div class="weekday-header" *ngFor="let day of weekDays">
-          {{ day }}
-        </div>
-
-        <!-- Calendar Days -->
-        <div
-          *ngFor="let day of prevCalendarDays$ | async"
-          class="calendar-day"
-          [ngClass]="{
-            'today': isToday(day),
-            'other-month': !isCurrentMonth(day),
-            'selected': isSelected(day)
-          }"
-          (click)="selectDay(day, $event)"
-        >
-          <div class="day-number">{{ day.getDate() }}</div>
-        </div>
-      </div>
-
-      <!-- Current Month/Week Grid -->
-      <div class="calendar-grid current-grid"
-           [ngClass]="{'week-view': isWeekView$ | async}">
-        <!-- Weekday Headers -->
-        <div class="weekday-header" *ngFor="let day of weekDays">
-          {{ day }}
-        </div>
-
-        <!-- Calendar Days -->
-        <div
-          *ngFor="let day of calendarDays$ | async"
-          class="calendar-day"
-          [ngClass]="{
-            'today': isToday(day),
-            'other-month': !isCurrentMonth(day),
-            'selected': isSelected(day)
-          }"
-          (click)="selectDay(day, $event)"
-        >
-          <div class="day-number">{{ day.getDate() }}</div>
-        </div>
-      </div>
-
-      <!-- Next Month/Week Grid -->
-      <div class="calendar-grid"
-           [ngClass]="{'week-view': isWeekView$ | async}">
-        <!-- Weekday Headers -->
-        <div class="weekday-header" *ngFor="let day of weekDays">
-          {{ day }}
-        </div>
-
-        <!-- Calendar Days -->
-        <div
-          *ngFor="let day of nextCalendarDays$ | async"
-          class="calendar-day"
-          [ngClass]="{
-            'today': isToday(day),
-            'other-month': !isCurrentMonth(day),
-            'selected': isSelected(day)
-          }"
-          (click)="selectDay(day, $event)"
-        >
-          <div class="day-number">{{ day.getDate() }}</div>
-        </div>
-      </div>
     </div>
   </div>
 </div>

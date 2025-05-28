@@ -4,6 +4,7 @@ import {HomeComponent} from "./pages/home/home.component";
 import {CommonModule} from "@angular/common";
 import {DashboardRoutingModule} from "./dashboard.routing";
 import {CalendarComponent} from "../core/component/calendar/calendar.component";
+import {FontAwesomeModule} from "@fortawesome/angular-fontawesome";
 
 
 
@@ -16,6 +17,7 @@ import {CalendarComponent} from "../core/component/calendar/calendar.component";
   imports: [
     CommonModule,
     DashboardRoutingModule,
+    FontAwesomeModule,
   ],
 })
 export class DashboardModule {}
